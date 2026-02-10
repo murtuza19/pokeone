@@ -28,9 +28,9 @@ function WithdrawButton({ pokemonTrading, amount, onWithdrawn }) {
 const RARITY_LABELS = ['', 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 const TYPE_COLORS = {
   Fire: '#ff6b35',
-  Water: '#4ecdc4',
-  Electric: '#ffe66d',
-  Grass: '#95e1a3',
+  Water: '#3692dc',
+  Electric: '#ffcb05',
+  Grass: '#5dbd63',
   Psychic: '#a855f7',
   Fighting: '#f97316',
   default: '#94a3b8',
@@ -38,6 +38,43 @@ const TYPE_COLORS = {
 
 function getTypeColor(type) {
   return TYPE_COLORS[type] || TYPE_COLORS.default;
+}
+
+const DEFAULT_CARD_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280'%3E%3Crect fill='%230f3460' rx='12' width='200' height='280'/%3E%3Crect fill='%231a4a7a' rx='8' x='16' y='16' width='168' height='168'/%3E%3Ctext x='100' y='115' fill='%23ffcb05' text-anchor='middle' font-family='sans-serif' font-size='48' font-weight='bold'%3EPKMN%3C/text%3E%3Ctext x='100' y='260' fill='%23a0aec0' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPokeOne%3C/text%3E%3C/svg%3E";
+
+function CardImage({ tokenURI, alt }) {
+  const [url, setUrl] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    if (!tokenURI || !String(tokenURI).trim()) {
+      setUrl(DEFAULT_CARD_IMAGE);
+      return;
+    }
+    const s = String(tokenURI).trim();
+    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(s)) {
+      setUrl(s);
+      return;
+    }
+    fetch(tokenURI)
+      .then((r) => r.json())
+      .then((j) => setUrl(j.image || DEFAULT_CARD_IMAGE))
+      .catch(() => setUrl(s));
+  }, [tokenURI]);
+  const displayUrl = failed || !url ? DEFAULT_CARD_IMAGE : url;
+  return <img src={displayUrl} alt={alt || 'Pokemon card'} onError={() => setFailed(true)} />;
+}
+
+/** Normalize getCard() result - ethers can return struct as object or tuple */
+function parseCard(raw) {
+  return {
+    name: raw.name ?? raw[0] ?? '',
+    pokemonType: raw.pokemonType ?? raw[1] ?? '',
+    hp: raw.hp ?? raw[2] ?? 0,
+    attack: raw.attack ?? raw[3] ?? 0,
+    defense: raw.defense ?? raw[4] ?? 0,
+    rarity: raw.rarity ?? raw[5] ?? 1,
+  };
 }
 
 export function Marketplace() {
@@ -72,16 +109,21 @@ export function Marketplace() {
       for (const tid of tokens) {
         const listing = await pokemonTrading.listings(tid);
         if (listing.active) {
-          const card = await pokemonNFT.getCard(tid);
-          listed.push({ tokenId: tid, ...card, price: listing.price, seller: listing.seller });
+          const [raw, tokenURI] = await Promise.all([pokemonNFT.getCard(tid), pokemonNFT.tokenURI(tid)]);
+          const card = parseCard(raw);
+          listed.push({ tokenId: tid, ...card, tokenURI, price: listing.price, seller: listing.seller });
         }
         const auction = await pokemonTrading.auctions(tid);
         if (!auction.settled && auction.endTime > 0n && BigInt(Math.floor(Date.now() / 1000)) < auction.endTime) {
-          const card = await pokemonNFT.getCard(tid);
+          const [raw, tokenURI] = await Promise.all([pokemonNFT.getCard(tid), pokemonNFT.tokenURI(tid)]);
+          const card = parseCard(raw);
           auctioned.push({
             tokenId: tid,
             ...card,
+            tokenURI,
+            startingPrice: auction.startingPrice,
             highestBid: auction.highestBid,
+            highestBidder: auction.highestBidder,
             endTime: auction.endTime,
             seller: auction.seller,
           });
@@ -95,8 +137,9 @@ export function Marketplace() {
         for (const tid of tokens) {
           const owner = await pokemonNFT.ownerOf(tid);
           if (owner?.toLowerCase() === account.toLowerCase()) {
-            const card = await pokemonNFT.getCard(tid);
-            mine.push({ tokenId: tid, ...card });
+            const [raw, tokenURI] = await Promise.all([pokemonNFT.getCard(tid), pokemonNFT.tokenURI(tid)]);
+            const card = parseCard(raw);
+            mine.push({ tokenId: tid, ...card, tokenURI });
           }
         }
         setMyCards(mine);
@@ -254,6 +297,9 @@ function CardTile({ item, type, onClick, getTypeColor, RARITY_LABELS }) {
       onClick={onClick}
       style={{ '--type-color': getTypeColor(item.pokemonType) }}
     >
+      <div className="card-tile-image">
+        <CardImage tokenURI={item.tokenURI} alt={item.name} />
+      </div>
       <div className="card-tile-header">
         <span className="type-badge">{item.pokemonType}</span>
         <span className="rarity">{RARITY_LABELS[item.rarity]}</span>

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
+import { TypeSelect } from './TypeSelect';
 
 export function MintCard() {
   const { pokemonNFT, account, isCorrectNetwork } = useWeb3();
-  const [name, setName] = useState('Pikachu');
-  const [pokemonType, setPokemonType] = useState('Electric');
-  const [hp, setHp] = useState(35);
-  const [attack, setAttack] = useState(55);
-  const [defense, setDefense] = useState(40);
-  const [rarity, setRarity] = useState(3);
-  const [uri, setUri] = useState('ipfs://placeholder');
+  const [name, setName] = useState('');
+  const [pokemonType, setPokemonType] = useState('');
+  const [hp, setHp] = useState(0);
+  const [attack, setAttack] = useState(0);
+  const [defense, setDefense] = useState(0);
+  const [rarity, setRarity] = useState(0);
+  const [uri, setUri] = useState('');
   const [txPending, setTxPending] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,13 +31,13 @@ export function MintCard() {
         rarity
       );
       await tx.wait();
-      setName('Pikachu');
-      setPokemonType('Electric');
-      setHp(35);
-      setAttack(55);
-      setDefense(40);
-      setRarity(3);
-      setUri('ipfs://placeholder');
+      setName('');
+      setPokemonType('');
+      setHp(0);
+      setAttack(0);
+      setDefense(0);
+      setRarity(0);
+      setUri('');
     } catch (err) {
       setError(err.shortMessage || err.message || 'Mint failed');
     } finally {
@@ -47,7 +48,7 @@ export function MintCard() {
   return (
     <div className="mint-card">
       <h3>Mint Pokemon Card</h3>
-      <p className="hint">Owner only - for demo</p>
+      <p className="hint">Owner only - for demo. HP, Attack, Defense: 0–255. Rarity: 1–5.</p>
       <div className="mint-form">
         <label>
           Name
@@ -55,30 +56,23 @@ export function MintCard() {
         </label>
         <label>
           Type
-          <select value={pokemonType} onChange={(e) => setPokemonType(e.target.value)}>
-            <option>Fire</option>
-            <option>Water</option>
-            <option>Electric</option>
-            <option>Grass</option>
-            <option>Psychic</option>
-            <option>Fighting</option>
-          </select>
+          <TypeSelect value={pokemonType} onChange={setPokemonType} />
         </label>
         <label>
-          HP <input type="number" min="1" max="255" value={hp} onChange={(e) => setHp(Number(e.target.value))} />
+          HP <input type="number" min="0" max="255" value={hp} onChange={(e) => setHp(Number(e.target.value))} />
         </label>
         <label>
-          Attack <input type="number" min="1" max="255" value={attack} onChange={(e) => setAttack(Number(e.target.value))} />
+          Attack <input type="number" min="0" max="255" value={attack} onChange={(e) => setAttack(Number(e.target.value))} />
         </label>
         <label>
-          Defense <input type="number" min="1" max="255" value={defense} onChange={(e) => setDefense(Number(e.target.value))} />
+          Defense <input type="number" min="0" max="255" value={defense} onChange={(e) => setDefense(Number(e.target.value))} />
         </label>
         <label>
           Rarity (1-5)
           <input type="number" min="1" max="5" value={rarity} onChange={(e) => setRarity(Number(e.target.value))} />
         </label>
         <label>
-          Token URI
+          Image URL
           <input value={uri} onChange={(e) => setUri(e.target.value)} />
         </label>
         {!account && <p className="hint">Connect your wallet first.</p>}

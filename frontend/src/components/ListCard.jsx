@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+function useLockBodyScroll(locked) {
+  useEffect(() => {
+    if (locked) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [locked]);
+}
+
 import { parseEther } from 'ethers';
 
 export function ListCard({ myCards, onClose, onListed, pokemonNFT, pokemonTrading }) {
+  useLockBodyScroll(true);
   const [selectedId, setSelectedId] = useState(null);
   const [price, setPrice] = useState('');
   const [mode, setMode] = useState('fixed'); // 'fixed' | 'auction'
@@ -75,7 +87,7 @@ export function ListCard({ myCards, onClose, onListed, pokemonNFT, pokemonTradin
                   className={`card-option ${selectedId === c.tokenId ? 'selected' : ''}`}
                   onClick={() => setSelectedId(c.tokenId)}
                 >
-                  #{c.tokenId} {c.name}
+                  #{Number(c.tokenId) + 1} {c.name}
                 </button>
               ))}
             </div>
