@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { parseEther } from 'ethers';
 import { useWeb3 } from '../hooks/useWeb3';
 
 export function MintCard() {
-  const { pokemonNFT, account } = useWeb3();
+  const { pokemonNFT, account, isCorrectNetwork } = useWeb3();
   const [name, setName] = useState('Pikachu');
   const [pokemonType, setPokemonType] = useState('Electric');
   const [hp, setHp] = useState(35);
@@ -14,8 +13,9 @@ export function MintCard() {
   const [txPending, setTxPending] = useState(false);
   const [error, setError] = useState('');
 
+  const canMint = pokemonNFT && account && isCorrectNetwork;
   const handleMint = async () => {
-    if (!pokemonNFT || !account) return;
+    if (!canMint) return;
     setError('');
     setTxPending(true);
     try {
@@ -81,9 +81,12 @@ export function MintCard() {
           Token URI
           <input value={uri} onChange={(e) => setUri(e.target.value)} />
         </label>
+        {!account && <p className="hint">Connect your wallet first.</p>}
+        {account && !isCorrectNetwork && <p className="error">Switch to Hardhat Local (Chain ID 31337) to mint.</p>}
+        {account && isCorrectNetwork && !pokemonNFT && <p className="error">Contracts not loaded. Restart dev server and refresh the page.</p>}
         {error && <p className="error">{error}</p>}
-        <button onClick={handleMint} disabled={txPending} className="btn btn-primary">
-          {txPending ? 'Minting...' : 'Mint'}
+        <button onClick={handleMint} disabled={txPending || !canMint} className="btn btn-primary">
+          {txPending ? 'Minting...' : canMint ? 'Mint' : 'Mint (connect wallet & use Hardhat Local)'}
         </button>
       </div>
     </div>

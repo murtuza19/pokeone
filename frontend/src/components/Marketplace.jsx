@@ -66,7 +66,6 @@ export function Marketplace() {
           break;
         }
       }
-      setAllTokens(tokens);
 
       const listed = [];
       const auctioned = [];
@@ -142,7 +141,9 @@ export function Marketplace() {
     return (
       <div className="marketplace-placeholder">
         <p>Connect wallet and ensure contract addresses are configured.</p>
-        <p className="hint">Deploy contracts with <code>npm run deploy</code> and set VITE_POKEMON_NFT_ADDRESS and VITE_POKEMON_TRADING_ADDRESS.</p>
+        <p className="hint">1. In <code>frontend/.env</code> set VITE_POKEMON_NFT_ADDRESS and VITE_POKEMON_TRADING_ADDRESS (from <code>npm run deploy</code>).</p>
+        <p className="hint">2. Restart the dev server (<code>npm run dev</code>) so it picks up .env, then refresh this page.</p>
+        <p className="hint">3. In MetaMask, switch to <strong>Hardhat Local</strong> (Chain ID 31337).</p>
       </div>
     );
   }
