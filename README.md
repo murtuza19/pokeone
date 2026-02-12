@@ -7,7 +7,7 @@ UCL DeFi Coursework 1: A decentralized application (dApp) for trading Pokémon c
 - **ERC721 NFT Contract**: Pokémon cards with on-chain metadata (name, type, HP, attack, defense, rarity)
 - **Trading Contract**: Fixed-price sales and English auctions
 - **Security**: ReentrancyGuard, Pausable, Ownable, pull-over-push withdrawals, minimum bid increment (front-running mitigation)
-- **Frontend**: React app with wallet connection, marketplace, and trading interfaces
+- **Frontend**: React app with wallet connection, marketplace, search/filter, mint form, and trading interfaces. Mobile-responsive.
 
 ## Prerequisites
 
@@ -98,7 +98,8 @@ Pokeone/
 │   └── PokemonTrading.test.js
 ├── frontend/                # React + Vite
 │   ├── src/
-│   │   ├── components/
+│   │   ├── components/      # Marketplace, CardDetail, ListCard, MintCard, FilterSelect, TypeSelect, WalletConnect
+│   │   ├── contexts/        # Web3Context
 │   │   ├── hooks/
 │   │   └── config.js
 │   └── .env.example
@@ -114,8 +115,10 @@ flowchart TB
         UI[React App]
         Wallet[Wallet Connect]
         Marketplace[Marketplace]
+        MintCard[Mint Card]
         UI --> Wallet
         UI --> Marketplace
+        UI --> MintCard
     end
 
     subgraph Blockchain
@@ -132,8 +135,19 @@ flowchart TB
 
     Marketplace -->|ethers.js| NFT
     Marketplace -->|ethers.js| Trading
+    MintCard -->|ethers.js| NFT
     Wallet -->|MetaMask| Users
 ```
+
+### Frontend Components
+
+- **Web3Context**: Shared wallet state, contract instances, owner check. Used by all components.
+- **WalletConnect**: Connect/disconnect, network switch, Welcome Minter/Buyer labels.
+- **Marketplace**: Listings, auctions, My Cards, search/filter (name, type, rarity), event listeners.
+- **CardDetail**: Modal for buy, bid, settle, unlist. Card stats, image, seller info.
+- **ListCard**: List card for fixed price or auction.
+- **MintCard**: Mint form (owner only). Name, type, stats, image URL.
+- **FilterSelect**: Custom dropdown for search filters with type colors.
 
 ### Smart Contracts
 
@@ -164,18 +178,3 @@ npm test
 | `npm run node`    | Start Hardhat local node  |
 | `npm run deploy`  | Deploy to localhost       |
 
-## Demo Video
-
-A 3-minute demo video is required for submission. Record the following:
-
-1. Wallet connection
-2. Minting a card (as owner)
-3. Listing a card for fixed price
-4. Buying a card
-5. Starting an auction and placing a bid
-6. Settling an auction
-7. Withdrawing proceeds
-
-## License
-
-ISC
