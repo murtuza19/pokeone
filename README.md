@@ -64,7 +64,27 @@ VITE_POKEMON_TRADING_ADDRESS=<PokemonTrading address from deploy>
 - Chain ID: 31337
 - Currency: ETH
 
-Import a test account (use a private key from the Hardhat node output).
+Import the test accounts below into MetaMask using their private keys.
+
+### Test Accounts
+
+Hardhat provides 20 pre-funded accounts (10,000 ETH each). Use the following for testing:
+
+| Account | Address | Private Key | Role |
+|---------|---------|-------------|------|
+| #0 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` | **Owner / Minter** — deploys contracts and mints new cards |
+| #1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` | **Buyer / Bidder** — purchases listed cards and places auction bids |
+| #2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a` | **Second Buyer** — useful for testing competing bids |
+
+**Recommended testing flow:**
+
+1. Connect with **Account #0** to mint Pokemon cards
+2. List a card for sale or start an auction (still as Account #0)
+3. Switch to **Account #1** in MetaMask to buy the listed card or place a bid
+4. Switch to **Account #2** to place a competing bid (auction testing)
+5. Switch back to **Account #0** to withdraw sale/auction proceeds
+
+> Only Account #0 can mint cards because it is the contract owner. All other accounts can buy, bid, list (cards they own), and withdraw.
 
 ### 7. Run Frontend
 
@@ -163,18 +183,6 @@ npm test
 | `npm run test`    | Run test suite            |
 | `npm run node`    | Start Hardhat local node  |
 | `npm run deploy`  | Deploy to localhost       |
-
-## Demo Video
-
-A 3-minute demo video is required for submission. Record the following:
-
-1. Wallet connection
-2. Minting a card (as owner)
-3. Listing a card for fixed price
-4. Buying a card
-5. Starting an auction and placing a bid
-6. Settling an auction
-7. Withdrawing proceeds
 
 ## License
 
