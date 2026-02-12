@@ -15,7 +15,7 @@ function shortenAddress(addr) {
   return addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
 }
 
-const DEFAULT_CARD_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280'%3E%3Crect fill='%230f3460' rx='12' width='200' height='280'/%3E%3Crect fill='%231a4a7a' rx='8' x='16' y='16' width='168' height='168'/%3E%3Ctext x='100' y='115' fill='%23ffcb05' text-anchor='middle' font-family='sans-serif' font-size='48' font-weight='bold'%3EPKMN%3C/text%3E%3Ctext x='100' y='260' fill='%23a0aec0' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPokeOne%3C/text%3E%3C/svg%3E";
+const DEFAULT_CARD_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a4a7a' width='100' height='100'/%3E%3Ccircle cx='50' cy='50' r='42' fill='%23fff'/%3E%3Cpath d='M8 50 A42 42 0 0 1 92 50 Z' fill='%23e3350d'/%3E%3Cpath d='M8 50 A42 42 0 0 0 92 50 Z' fill='%23fff'/%3E%3Crect x='8' y='46' width='84' height='8' fill='%23212121'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23212121'/%3E%3Ccircle cx='48' cy='48' r='3' fill='%23fff'/%3E%3C/svg%3E";
 
 function CardImage({ tokenURI, alt }) {
   const [url, setUrl] = useState(null);

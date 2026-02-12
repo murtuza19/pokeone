@@ -14,9 +14,12 @@ export function Web3Provider({ children }) {
   const [error, setError] = useState(null);
   const [pokemonNFT, setPokemonNFT] = useState(null);
   const [pokemonTrading, setPokemonTrading] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const connect = useCallback(async () => {
     setError(null);
+    setIsConnecting(true);
     try {
       if (!window.ethereum) {
         throw new Error('Please install MetaMask');
@@ -42,6 +45,8 @@ export function Web3Provider({ children }) {
     } catch (err) {
       setError(err.message || 'Failed to connect');
       console.error(err);
+    } finally {
+      setIsConnecting(false);
     }
   }, []);
 
@@ -52,7 +57,18 @@ export function Web3Provider({ children }) {
     setChainId(null);
     setPokemonNFT(null);
     setPokemonTrading(null);
+    setIsOwner(false);
   }, []);
+
+  useEffect(() => {
+    if (!pokemonNFT || !account) {
+      setIsOwner(false);
+      return;
+    }
+    pokemonNFT.owner()
+      .then((owner) => setIsOwner(owner?.toLowerCase() === account.toLowerCase()))
+      .catch(() => setIsOwner(false));
+  }, [pokemonNFT, account]);
 
   useEffect(() => {
     if (!window.ethereum) return;
@@ -80,6 +96,8 @@ export function Web3Provider({ children }) {
     connect,
     disconnect,
     isCorrectNetwork: chainId === CONFIG.chainId,
+    isOwner,
+    isConnecting,
   };
 
   return (

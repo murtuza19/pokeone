@@ -3,18 +3,22 @@ import { useWeb3 } from '../hooks/useWeb3';
 import { TypeSelect } from './TypeSelect';
 
 export function MintCard() {
-  const { pokemonNFT, account, isCorrectNetwork } = useWeb3();
+  const { pokemonNFT, account, isCorrectNetwork, isOwner } = useWeb3();
   const [name, setName] = useState('');
   const [pokemonType, setPokemonType] = useState('');
-  const [hp, setHp] = useState(0);
-  const [attack, setAttack] = useState(0);
-  const [defense, setDefense] = useState(0);
-  const [rarity, setRarity] = useState(0);
+  const [hp, setHp] = useState('');
+  const [attack, setAttack] = useState('');
+  const [defense, setDefense] = useState('');
+  const [rarity, setRarity] = useState('');
   const [uri, setUri] = useState('');
   const [txPending, setTxPending] = useState(false);
   const [error, setError] = useState('');
 
-  const canMint = pokemonNFT && account && isCorrectNetwork;
+  const hpNum = Math.min(255, Math.max(0, parseInt(hp, 10) || 0));
+  const attackNum = Math.min(255, Math.max(0, parseInt(attack, 10) || 0));
+  const defenseNum = Math.min(255, Math.max(0, parseInt(defense, 10) || 0));
+  const rarityNum = Math.min(5, Math.max(1, parseInt(rarity, 10) || 1));
+  const canMint = Boolean(pokemonNFT && account && isCorrectNetwork && isOwner && name.trim());
   const handleMint = async () => {
     if (!canMint) return;
     setError('');
@@ -25,25 +29,29 @@ export function MintCard() {
         uri,
         name,
         pokemonType,
-        hp,
-        attack,
-        defense,
-        rarity
+        hpNum,
+        attackNum,
+        defenseNum,
+        rarityNum
       );
       await tx.wait();
       setName('');
       setPokemonType('');
-      setHp(0);
-      setAttack(0);
-      setDefense(0);
-      setRarity(0);
+      setHp('');
+      setAttack('');
+      setDefense('');
+      setRarity('');
       setUri('');
     } catch (err) {
-      setError(err.shortMessage || err.message || 'Mint failed');
+      const msg = err.shortMessage ?? err.message ?? (typeof err === 'string' ? err : 'Mint failed');
+      setError(msg);
+      console.error('Mint error:', err);
     } finally {
       setTxPending(false);
     }
   };
+
+  if (!isOwner) return null;
 
   return (
     <div className="mint-card">
@@ -59,17 +67,17 @@ export function MintCard() {
           <TypeSelect value={pokemonType} onChange={setPokemonType} />
         </label>
         <label>
-          HP <input type="number" min="0" max="255" value={hp} onChange={(e) => setHp(Number(e.target.value))} />
+          HP <input type="number" min="0" max="255" placeholder="0" value={hp} onChange={(e) => setHp(e.target.value)} />
         </label>
         <label>
-          Attack <input type="number" min="0" max="255" value={attack} onChange={(e) => setAttack(Number(e.target.value))} />
+          Attack <input type="number" min="0" max="255" placeholder="0" value={attack} onChange={(e) => setAttack(e.target.value)} />
         </label>
         <label>
-          Defense <input type="number" min="0" max="255" value={defense} onChange={(e) => setDefense(Number(e.target.value))} />
+          Defense <input type="number" min="0" max="255" placeholder="0" value={defense} onChange={(e) => setDefense(e.target.value)} />
         </label>
         <label>
           Rarity (1-5)
-          <input type="number" min="1" max="5" value={rarity} onChange={(e) => setRarity(Number(e.target.value))} />
+          <input type="number" min="1" max="5" placeholder="1" value={rarity} onChange={(e) => setRarity(e.target.value)} />
         </label>
         <label>
           Image URL
@@ -78,9 +86,10 @@ export function MintCard() {
         {!account && <p className="hint">Connect your wallet first.</p>}
         {account && !isCorrectNetwork && <p className="error">Switch to Hardhat Local (Chain ID 31337) to mint.</p>}
         {account && isCorrectNetwork && !pokemonNFT && <p className="error">Contracts not loaded. Restart dev server and refresh the page.</p>}
+        {account && isCorrectNetwork && pokemonNFT && !name.trim() && <p className="hint">Enter a card name to enable minting.</p>}
         {error && <p className="error">{error}</p>}
         <button onClick={handleMint} disabled={txPending || !canMint} className="btn btn-primary">
-          {txPending ? 'Minting...' : canMint ? 'Mint' : 'Mint (connect wallet & use Hardhat Local)'}
+          {txPending ? 'Minting...' : canMint ? 'Mint' : 'Mint'}
         </button>
       </div>
     </div>

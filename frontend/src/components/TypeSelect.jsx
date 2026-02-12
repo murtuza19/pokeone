@@ -8,7 +8,7 @@ const TYPE_COLORS = {
   Electric: '#ffcb05',
   Grass: '#5dbd63',
   Psychic: '#a855f7',
-  Fighting: '#f97316',
+  Fighting: '#b91c1c',
 };
 
 export function TypeSelect({ value, onChange }) {

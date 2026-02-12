@@ -2,7 +2,7 @@ import { useWeb3 } from '../hooks/useWeb3';
 import { CONFIG } from '../config';
 
 export function WalletConnect() {
-  const { account, connect, disconnect, error, chainId, isCorrectNetwork } = useWeb3();
+  const { account, connect, disconnect, error, chainId, isCorrectNetwork, isOwner, isConnecting } = useWeb3();
 
   const shortenAddress = (addr) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
@@ -43,10 +43,16 @@ export function WalletConnect() {
               </button>
             </>
           )}
+          <span className="wallet-role">{isOwner ? 'Welcome, Minter' : 'Welcome, Buyer'}</span>
           <span className="address">{shortenAddress(account)}</span>
           <button onClick={disconnect} className="btn btn-outline">
             Disconnect
           </button>
+        </div>
+      ) : isConnecting ? (
+        <div className="wallet-connecting">
+          <span className="wallet-connecting-spinner" />
+          <span className="wallet-connecting-text">Connecting...</span>
         </div>
       ) : (
         <button onClick={connect} className="btn btn-primary">

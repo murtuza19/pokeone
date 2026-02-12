@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { CardDetail } from './CardDetail';
 import { ListCard } from './ListCard';
+import { FilterSelect } from './FilterSelect';
 import { formatEther } from 'ethers';
 
 function WithdrawButton({ pokemonTrading, amount, onWithdrawn }) {
@@ -26,13 +27,14 @@ function WithdrawButton({ pokemonTrading, amount, onWithdrawn }) {
 }
 
 const RARITY_LABELS = ['', 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+const TYPES = ['Fire', 'Water', 'Electric', 'Grass', 'Psychic', 'Fighting'];
 const TYPE_COLORS = {
   Fire: '#ff6b35',
   Water: '#3692dc',
   Electric: '#ffcb05',
   Grass: '#5dbd63',
   Psychic: '#a855f7',
-  Fighting: '#f97316',
+  Fighting: '#b91c1c',
   default: '#94a3b8',
 };
 
@@ -40,7 +42,7 @@ function getTypeColor(type) {
   return TYPE_COLORS[type] || TYPE_COLORS.default;
 }
 
-const DEFAULT_CARD_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280'%3E%3Crect fill='%230f3460' rx='12' width='200' height='280'/%3E%3Crect fill='%231a4a7a' rx='8' x='16' y='16' width='168' height='168'/%3E%3Ctext x='100' y='115' fill='%23ffcb05' text-anchor='middle' font-family='sans-serif' font-size='48' font-weight='bold'%3EPKMN%3C/text%3E%3Ctext x='100' y='260' fill='%23a0aec0' text-anchor='middle' font-family='sans-serif' font-size='14'%3EPokeOne%3C/text%3E%3C/svg%3E";
+const DEFAULT_CARD_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a4a7a' width='100' height='100'/%3E%3Ccircle cx='50' cy='50' r='42' fill='%23fff'/%3E%3Cpath d='M8 50 A42 42 0 0 1 92 50 Z' fill='%23e3350d'/%3E%3Cpath d='M8 50 A42 42 0 0 0 92 50 Z' fill='%23fff'/%3E%3Crect x='8' y='46' width='84' height='8' fill='%23212121'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23212121'/%3E%3Ccircle cx='48' cy='48' r='3' fill='%23fff'/%3E%3C/svg%3E";
 
 function CardImage({ tokenURI, alt }) {
   const [url, setUrl] = useState(null);
@@ -65,6 +67,16 @@ function CardImage({ tokenURI, alt }) {
   return <img src={displayUrl} alt={alt || 'Pokemon card'} onError={() => setFailed(true)} />;
 }
 
+/** Filter cards by search query, type, and rarity */
+function filterCards(items, { search, type, rarity }) {
+  return items.filter((item) => {
+    const nameMatch = !search.trim() || String(item.name || '').toLowerCase().includes(search.toLowerCase());
+    const typeMatch = !type || (item.pokemonType || '').toLowerCase() === type.toLowerCase();
+    const rarityMatch = !rarity || Number(item.rarity ?? 0) === Number(rarity);
+    return nameMatch && typeMatch && rarityMatch;
+  });
+}
+
 /** Normalize getCard() result - ethers can return struct as object or tuple */
 function parseCard(raw) {
   return {
@@ -86,6 +98,14 @@ export function Marketplace() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [showListModal, setShowListModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [rarityFilter, setRarityFilter] = useState('');
+
+  const filterOpts = { search: searchQuery, type: typeFilter, rarity: rarityFilter };
+  const filteredListings = filterCards(listings, filterOpts);
+  const filteredAuctions = filterCards(auctions, filterOpts);
+  const filteredMyCards = filterCards(myCards, filterOpts);
 
   const loadData = async () => {
     if (!pokemonNFT || !pokemonTrading) return;
@@ -209,10 +229,45 @@ export function Marketplace() {
 
       {loading && <p className="loading">Loading...</p>}
 
+      <div className="search-filters">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <FilterSelect
+          value={typeFilter}
+          onChange={setTypeFilter}
+          placeholder="All types"
+          options={[
+            { value: '', label: 'All types' },
+            ...TYPES.map((t) => ({ value: t, label: t, color: TYPE_COLORS[t] })),
+          ]}
+        />
+        <FilterSelect
+          value={rarityFilter}
+          onChange={(v) => setRarityFilter(v)}
+          placeholder="All rarities"
+          options={[
+            { value: '', label: 'All rarities' },
+            ...([1, 2, 3, 4, 5].map((r) => ({ value: String(r), label: RARITY_LABELS[r] }))),
+          ]}
+        />
+        <button
+          type="button"
+          className="btn btn-outline filter-clear"
+          onClick={() => { setSearchQuery(''); setTypeFilter(''); setRarityFilter(''); }}
+        >
+          Clear
+        </button>
+      </div>
+
       <section className="section">
         <h3>Fixed Price Listings</h3>
         <div className="card-grid">
-          {listings.map((item) => (
+          {filteredListings.map((item) => (
             <CardTile
               key={item.tokenId}
               item={item}
@@ -223,13 +278,13 @@ export function Marketplace() {
             />
           ))}
         </div>
-        {listings.length === 0 && !loading && <p className="empty">No listings</p>}
+        {filteredListings.length === 0 && !loading && <p className="empty">{listings.length === 0 ? 'No listings' : 'No matching listings'}</p>}
       </section>
 
       <section className="section">
         <h3>Auctions</h3>
         <div className="card-grid">
-          {auctions.map((item) => (
+          {filteredAuctions.map((item) => (
             <CardTile
               key={item.tokenId}
               item={item}
@@ -240,14 +295,14 @@ export function Marketplace() {
             />
           ))}
         </div>
-        {auctions.length === 0 && !loading && <p className="empty">No active auctions</p>}
+        {filteredAuctions.length === 0 && !loading && <p className="empty">{auctions.length === 0 ? 'No active auctions' : 'No matching auctions'}</p>}
       </section>
 
       {account && myCards.length > 0 && (
         <section className="section">
           <h3>My Cards</h3>
           <div className="card-grid">
-            {myCards.map((item) => (
+            {filteredMyCards.map((item) => (
               <CardTile
                 key={item.tokenId}
                 item={item}
@@ -258,6 +313,7 @@ export function Marketplace() {
               />
             ))}
           </div>
+          {filteredMyCards.length === 0 && <p className="empty">No matching cards</p>}
         </section>
       )}
 
