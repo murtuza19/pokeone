@@ -171,17 +171,20 @@ flowchart TB
 
 ### Smart Contracts
 
-- **PokemonNFT**: ERC721 with URI storage, Ownable, Pausable. Owner mints cards with metadata.
-- **PokemonTrading**: Accepts NFT transfers for listing. Implements fixed-price `buyCard` and auction `placeBid`/`settleAuction`. Uses pull-over-push for secure withdrawals.
+- **PokemonNFT**: ERC721 with URI storage, Ownable, Pausable. Owner mints cards with metadata. `totalSupply()` returns number of minted tokens.
+- **PokemonTrading**: Accepts NFT transfers for listing. Implements fixed-price `buyCard` and auction `placeBid`/`settleAuction`. Optional **commit-reveal** flow: `commitBid(tokenId, commitment)` then `placeBidReveal(tokenId, amount, nonce)` with `value: amount`. Uses pull-over-push for secure withdrawals. Max auction duration 30 days.
 
 ### Security Measures
 
 - **ReentrancyGuard**: On all state-changing functions in PokemonTrading
 - **Pausable**: Emergency stop on both contracts
 - **Ownable**: Restricted minting to owner
-- **Pull-over-push**: Sellers withdraw via `withdraw()` instead of direct transfers
-- **Front-running mitigation**: 5% minimum bid increment on auctions
+- **Pull-over-push**: Sellers (and overpaying buyers) withdraw via `withdraw()` instead of direct transfers
+- **Front-running mitigation**: 5% minimum bid increment on auctions; auction extends by 5 min if bid in last 5 min (sniping mitigation); **commit-reveal** for bids (`commitBid` + `placeBidReveal`) so bid amount is hidden until reveal
+- **Max auction duration**: `MAX_AUCTION_DURATION = 30 days` to prevent extremely long-lived auctions
 - **Integer overflow**: Solidity 0.8.x built-in checks
+- **Custom errors**: Gas-efficient reverts; no refund push to buyer (excess ETH credited to `pendingWithdrawals`)
+- **Frontend**: Image URLs sanitized to `http:`, `https:`, or `data:` only to prevent XSS
 
 ## Testing
 
@@ -198,6 +201,3 @@ npm test
 | `npm run node`    | Start Hardhat local node  |
 | `npm run deploy`  | Deploy to localhost       |
 
-## License
-
-ISC

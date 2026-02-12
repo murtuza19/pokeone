@@ -6,6 +6,15 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
+/// @notice Thrown when mint is called with an empty name
+error NameRequired();
+
+/// @notice Thrown when rarity is not in the valid range 1-5
+error RarityOutOfRange();
+
+/// @notice Thrown when querying a token that does not exist
+error TokenDoesNotExist();
+
 /**
  * @title PokemonNFT
  * @dev ERC721 contract for Pokemon card NFTs with comprehensive metadata
@@ -56,8 +65,8 @@ contract PokemonNFT is ERC721, ERC721URIStorage, Ownable, Pausable {
         uint8 defense,
         uint8 rarity
     ) external onlyOwner whenNotPaused {
-        require(bytes(name).length > 0, "Name required");
-        require(rarity >= 1 && rarity <= 5, "Rarity must be 1-5");
+        if (bytes(name).length == 0) revert NameRequired();
+        if (rarity < 1 || rarity > 5) revert RarityOutOfRange();
 
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
@@ -75,20 +84,41 @@ contract PokemonNFT is ERC721, ERC721URIStorage, Ownable, Pausable {
         emit PokemonMinted(to, tokenId, name, pokemonType, rarity);
     }
 
-    /// @dev Returns full card data for a token
+    /**
+     * @dev Returns the total number of tokens minted (no burn, so equals circulating supply)
+     * @return Total count of minted token IDs
+     */
+    function totalSupply() external view returns (uint256) {
+        return _nextTokenId;
+    }
+
+    /**
+     * @dev Returns full card data for a token
+     * @param tokenId The token ID to query
+     * @return PokemonCard struct with name, pokemonType, hp, attack, defense, rarity
+     */
     function getCard(uint256 tokenId) external view returns (PokemonCard memory) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         return pokemonCards[tokenId];
     }
 
+    /// @dev Pauses minting and transfers (emergency stop)
     function pause() external onlyOwner {
         _pause();
     }
 
+    /// @dev Resumes minting and transfers after pause
     function unpause() external onlyOwner {
         _unpause();
     }
 
+    /**
+     * @dev Hook that runs on transfer; enforces pause
+     * @param to Recipient
+     * @param tokenId Token being transferred
+     * @param auth Authorized address
+     * @return address from super
+     */
     function _update(
         address to,
         uint256 tokenId,
@@ -97,6 +127,11 @@ contract PokemonNFT is ERC721, ERC721URIStorage, Ownable, Pausable {
         return super._update(to, tokenId, auth);
     }
 
+    /**
+     * @dev Returns the metadata URI for a token
+     * @param tokenId The token ID
+     * @return The URI string
+     */
     function tokenURI(uint256 tokenId)
         public
         view
@@ -106,6 +141,11 @@ contract PokemonNFT is ERC721, ERC721URIStorage, Ownable, Pausable {
         return super.tokenURI(tokenId);
     }
 
+    /**
+     * @dev ERC165 interface support
+     * @param interfaceId Interface ID
+     * @return true if the contract supports the interface
+     */
     function supportsInterface(bytes4 interfaceId)
         public
         view

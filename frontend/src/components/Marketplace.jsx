@@ -4,6 +4,7 @@ import { CardDetail } from './CardDetail';
 import { ListCard } from './ListCard';
 import { FilterSelect } from './FilterSelect';
 import { formatEther } from 'ethers';
+import { safeImageUrl } from '../utils/safeImageUrl';
 
 function WithdrawButton({ pokemonTrading, amount, onWithdrawn }) {
   const [txPending, setTxPending] = useState(false);
@@ -54,16 +55,21 @@ function CardImage({ tokenURI, alt }) {
       return;
     }
     const s = String(tokenURI).trim();
-    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(s)) {
-      setUrl(s);
+    const safe = safeImageUrl(s, DEFAULT_CARD_IMAGE);
+    if (safe !== DEFAULT_CARD_IMAGE && /\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(s)) {
+      setUrl(safe);
       return;
     }
-    fetch(tokenURI)
-      .then((r) => r.json())
-      .then((j) => setUrl(j.image || DEFAULT_CARD_IMAGE))
-      .catch(() => setUrl(s));
+    if (safe !== DEFAULT_CARD_IMAGE && (s.startsWith('http:') || s.startsWith('https:'))) {
+      fetch(s)
+        .then((r) => r.json())
+        .then((j) => setUrl(safeImageUrl(j?.image, DEFAULT_CARD_IMAGE)))
+        .catch(() => setUrl(safe));
+      return;
+    }
+    setUrl(DEFAULT_CARD_IMAGE);
   }, [tokenURI]);
-  const displayUrl = failed || !url ? DEFAULT_CARD_IMAGE : url;
+  const displayUrl = failed || !url ? DEFAULT_CARD_IMAGE : safeImageUrl(url, DEFAULT_CARD_IMAGE);
   return <img src={displayUrl} alt={alt || 'Pokemon card'} onError={() => setFailed(true)} />;
 }
 
@@ -111,7 +117,7 @@ export function Marketplace() {
     if (!pokemonNFT || !pokemonTrading) return;
     setLoading(true);
     try {
-      const totalSupply = 20;
+      const totalSupply = Number(await pokemonNFT.totalSupply());
       const tokens = [];
       for (let i = 0; i < totalSupply; i++) {
         try {

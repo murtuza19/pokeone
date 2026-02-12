@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { formatEther, parseEther } from 'ethers';
+import { safeImageUrl } from '../utils/safeImageUrl';
 
 function useLockBodyScroll(locked) {
   useEffect(() => {
@@ -9,7 +11,6 @@ function useLockBodyScroll(locked) {
     }
   }, [locked]);
 }
-import { formatEther, parseEther } from 'ethers';
 
 function shortenAddress(addr) {
   return addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
@@ -27,16 +28,21 @@ function CardImage({ tokenURI, alt }) {
       return;
     }
     const s = String(tokenURI).trim();
-    if (/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(s)) {
-      setUrl(s);
+    const safe = safeImageUrl(s, DEFAULT_CARD_IMAGE);
+    if (safe !== DEFAULT_CARD_IMAGE && /\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(s)) {
+      setUrl(safe);
       return;
     }
-    fetch(s)
-      .then((r) => r.json())
-      .then((j) => setUrl(j.image || DEFAULT_CARD_IMAGE))
-      .catch(() => setUrl(s));
+    if (safe !== DEFAULT_CARD_IMAGE && (s.startsWith('http:') || s.startsWith('https:'))) {
+      fetch(s)
+        .then((r) => r.json())
+        .then((j) => setUrl(safeImageUrl(j?.image, DEFAULT_CARD_IMAGE)))
+        .catch(() => setUrl(safe));
+      return;
+    }
+    setUrl(DEFAULT_CARD_IMAGE);
   }, [tokenURI]);
-  const displayUrl = failed || !url ? DEFAULT_CARD_IMAGE : url;
+  const displayUrl = failed || !url ? DEFAULT_CARD_IMAGE : safeImageUrl(url, DEFAULT_CARD_IMAGE);
   return <img src={displayUrl} alt={alt || 'Pokemon card'} className="modal-card-image" onError={() => setFailed(true)} />;
 }
 

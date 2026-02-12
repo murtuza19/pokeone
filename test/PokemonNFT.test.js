@@ -89,23 +89,56 @@ describe("PokemonNFT", function () {
     });
 
     // Rarity must be between 1 and 5 (inclusive). Verify that both
-    // out-of-range values (0 and 6) are rejected.
+    // out-of-range values (0 and 6) are rejected (custom error RarityOutOfRange).
     it("Should reject invalid rarity", async function () {
       await expect(
         pokemonNFT.mint(user1.address, "uri", "Pikachu", "Electric", 35, 55, 40, 0)
-      ).to.be.revertedWith("Rarity must be 1-5");
+      ).to.be.revertedWithCustomError(pokemonNFT, "RarityOutOfRange");
 
       await expect(
         pokemonNFT.mint(user1.address, "uri", "Pikachu", "Electric", 35, 55, 40, 6)
-      ).to.be.revertedWith("Rarity must be 1-5");
+      ).to.be.revertedWithCustomError(pokemonNFT, "RarityOutOfRange");
     });
 
-    // An empty Pokemon name is not allowed; the contract should revert
-    // with "Name required" to enforce basic data integrity.
+    // An empty Pokemon name is not allowed (custom error NameRequired).
     it("Should reject empty name", async function () {
       await expect(
         pokemonNFT.mint(user1.address, "uri", "", "Electric", 35, 55, 40, 3)
-      ).to.be.revertedWith("Name required");
+      ).to.be.revertedWithCustomError(pokemonNFT, "NameRequired");
+    });
+  });
+
+  describe("totalSupply", function () {
+    it("Should return 0 before any mint", async function () {
+      expect(await pokemonNFT.totalSupply()).to.equal(0);
+    });
+
+    it("Should return 1 after one mint", async function () {
+      await pokemonNFT.mint(user1.address, "uri", "Pikachu", "Electric", 35, 55, 40, 3);
+      expect(await pokemonNFT.totalSupply()).to.equal(1);
+    });
+
+    it("Should return 2 after two mints", async function () {
+      await pokemonNFT.mint(user1.address, "uri1", "Pikachu", "Electric", 35, 55, 40, 3);
+      await pokemonNFT.mint(owner.address, "uri2", "Charizard", "Fire", 78, 84, 78, 5);
+      expect(await pokemonNFT.totalSupply()).to.equal(2);
+    });
+  });
+
+  describe("getCard", function () {
+    it("Should revert for non-existent token", async function () {
+      await expect(pokemonNFT.getCard(0)).to.be.revertedWithCustomError(pokemonNFT, "TokenDoesNotExist");
+    });
+
+    it("Should return correct data for minted token", async function () {
+      await pokemonNFT.mint(user1.address, "ipfs://x", "Bulbasaur", "Grass", 45, 49, 49, 2);
+      const card = await pokemonNFT.getCard(0);
+      expect(card.name).to.equal("Bulbasaur");
+      expect(card.pokemonType).to.equal("Grass");
+      expect(card.hp).to.equal(45);
+      expect(card.attack).to.equal(49);
+      expect(card.defense).to.equal(49);
+      expect(card.rarity).to.equal(2);
     });
   });
 
